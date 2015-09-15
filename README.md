@@ -11,7 +11,7 @@ basic results.
 
 > We solve the stochastic neoclassical growth model, the workhorse of modern
 > macroeconomics, using `C++11`, `Fortran 2008`, `Java`, `Julia`, `Python`,
-> `Matlab`, `Mathematica`, and `R`. We implement the same algorithm, value
+> `Matlab`, `Mathematica`, `R`, and others. We implement the same algorithm, value
 > function iteration with grid search, in each of the languages. We report the
 > execution times of the codes in a `Mac` and in a `Windows` computer and
 > comment on the strength and weakness of each language.
@@ -41,6 +41,8 @@ basic results.
 20. `RBC_JS.js`: Javascrip code.
 21. `RBC_Python_Cython.py`: Cython code.
 22. `RBC_Swift.swift`: Swift code.
+23. `RBC_Swift2.swift`: Swift 2.0+ code.
+24. `RBC_Rust`: Rust code, not idiomatic nor fully optimised.
 
 ## Compilation flags
 
@@ -54,7 +56,8 @@ basic results.
 8. Intel compiler: `ifortran -o testf -O3 RBC_F90.f90`
 9. `javac RBC_Java.java` and run as `java RBC_Java -XX:+AggressiveOpts`
 10. `RBC_C.c` can be compiled in C, C++ and Objective-C: `clang -o testc -x <language> -O3 RBC_C.c` with `<language>` = `c`, `c++` or `objective-c`. Same for GCC.
-11. Swift: `swiftc -o testswift -O RBC_Swift.swift -sdk $(xcrun --show-sdk-path --sdk macosx)`
+11. Swift: `swiftc -o testswift -O RBC_Swift.swift -sdk $(xcrun --show-sdk-path --sdk macosx)`, similarly for `RBC_Swift2.swift`.
+12. Rust: `cargo build --release`.
 
 In all cases with a JIT, you may want to warm up the JIT before testing for
 speed.
