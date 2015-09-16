@@ -70,11 +70,7 @@ fn main() {
   // 5. Main iteration
   // TODO: one could implement a macro for the multiple declarations
     let mut maxDifference = 10_f64;
-    let mut diff: f64;
-    let tolerance = 0.0000001_f64; // compiler warn: variable does not need to be mutable
-    let mut valueHighSoFar: f64;
-    let mut valueProvisional: f64;
-    let mut consumption: f64;
+    const tolerance: f64 = 0.0000001; // compiler warn: variable does not need to be mutable
     let mut capitalChoice: f64;
 
     let mut iteration = 0;
@@ -99,14 +95,13 @@ fn main() {
 
             for nCapital in 0..nGridCapital {
 
-                valueHighSoFar = -100000.0;
-            //capitalChoice  = vGridCapital[0]; // compiler warn: is never read
+                let mut valueHighSoFar = -100000.0;
 
                 for nCapitalNextPeriod in gridCapitalNextPeriod..nGridCapital {
 
-                    consumption = mOutput[nCapital][nProductivity] -
+                    let consumption = mOutput[nCapital][nProductivity] -
                                   vGridCapital[nCapitalNextPeriod];
-                    valueProvisional = (1_f64 - bbeta) * (consumption.ln()) +
+                    let valueProvisional = (1_f64 - bbeta) * (consumption.ln()) +
                                        bbeta *
                                        expectedValueFunction[nCapitalNextPeriod][nProductivity];
 
@@ -129,7 +124,7 @@ fn main() {
         let mut diffHighSoFar = -100000.0;
         for nProductivity in 0..nGridProductivity {
             for nCapital in 0..nGridCapital {
-                diff = (mValueFunction[nCapital][nProductivity] -
+                let diff = (mValueFunction[nCapital][nProductivity] -
                         mValueFunctionNew[nCapital][nProductivity])
                            .abs();
                 if diff > diffHighSoFar {
