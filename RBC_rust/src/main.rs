@@ -45,7 +45,7 @@ fn main() {
                            .collect::<Vec<f64>>();
 
     // 3. Required matrices and vectors
-    let mut mValueFunction = vec![vec![0f64; nGridProductivity]; nGridCapital];
+    let mut mValueFunction = vec![[0f64; nGridProductivity]; nGridCapital];
     let mut mValueFunctionNew = mValueFunction.clone();
     let mut mPolicyFunction = mValueFunction.clone();
     let mut expectedValueFunction = mValueFunction.clone();
