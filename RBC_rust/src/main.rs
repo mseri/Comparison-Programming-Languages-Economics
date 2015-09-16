@@ -1,4 +1,5 @@
 #![allow(non_snake_case, non_upper_case_globals)]
+// #![cfg_attr(test, feature(test))]
 extern crate time;
 
 use time::precise_time_s;
@@ -24,10 +25,7 @@ const mTransition:[[f64; 5]; 5] = [[0.9727, 0.0273, 0.0000, 0.0000, 0.0000],
 const nGridCapital: usize = 17820;
 const nGridProductivity: usize = 5;
 
-fn main() {
-
-    let cpu0 = precise_time_s();
-
+fn solve(print: bool) -> f64 {
   /////////////////////////////////////////////////////////////////////////////
   // 2. Steady State
   /////////////////////////////////////////////////////////////////////////////
@@ -36,9 +34,12 @@ fn main() {
     let outputSteadyState: f64 = capitalSteadyState.powf(aalpha);
     let consumptionSteadyState: f64 = outputSteadyState - capitalSteadyState;
 
-    println!("\
-    Output = {}, Capital = {}, Consumption = {}",
-    outputSteadyState, capitalSteadyState, consumptionSteadyState);
+    if print {
+        println!("Output = {}, Capital = {}, Consumption = {}",
+                 outputSteadyState,
+                 capitalSteadyState,
+                 consumptionSteadyState);
+    }
 
     let vGridCapital = (0..nGridCapital)
                            .map(|nCapital| 0.5 * capitalSteadyState + 0.00001 * (nCapital as f64))
@@ -130,15 +131,61 @@ fn main() {
         maxDifference = diffHighSoFar;
 
         iteration += 1;
-        if iteration % 10 == 0 || iteration == 1 {
+        if print && (iteration % 10 == 0 || iteration == 1) {
             println!("Iteration = {}, Sup Diff = {}", iteration, maxDifference);
         }
     }
 
-    println!("Iteration = {}, Sup Diff = {}\n", iteration, maxDifference);
-    println!("My check = {}\n", mPolicyFunction[999][2]);
+    if print {
+        println!("Iteration = {}, Sup Diff = {}", iteration, maxDifference);
+    }
 
-    let cpu1 = precise_time_s();
-
-    println!("Elapsed time is   = {}", cpu1  - cpu0);
+    mPolicyFunction[999][2]
 }
+
+fn main() {
+    let sample = false;
+
+    if sample {
+        let mut samples = (0..5).map(|i| {
+            let cpu0 = precise_time_s();
+            let result = solve(false);
+            let cpu1 = precise_time_s();
+
+            assert_eq!(result, 0.1465491436956954);
+
+            let diff = cpu1 - cpu0;
+            println!("Sample #{}, Time: {}s", i + 1, diff);
+            diff
+        }).collect::<Vec<f64>>();
+
+        samples.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        println!("\nMedian time is = {}", samples[2]);
+    } else {
+        let cpu0 = precise_time_s();
+        let result = solve(true);
+        let cpu1 = precise_time_s();
+
+        println!("My check = {}\n", result);
+        assert_eq!(result, 0.1465491436956954);
+        println!("Elapsed time is = {}", cpu1 - cpu0);
+    }
+}
+
+
+// FIXME: Can't use bench as the loop is too slow (takes 8mins to get samples)
+// #[cfg(test)]
+// mod test {
+//     extern crate test;
+//     use self::test::Bencher;
+//     use super::solve;
+
+//     #[bench]
+//     fn bench(b: &mut Bencher) {
+//         b.iter(|| {
+//             // use `test::black_box` to prevent compiler optimizations from disregarding
+//             // unused values
+//             test::black_box(solve(false));
+//         });
+//     }
+// }
