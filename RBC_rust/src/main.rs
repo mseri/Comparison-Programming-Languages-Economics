@@ -41,9 +41,11 @@ fn solve(print: bool) -> f64 {
                  consumptionSteadyState);
     }
 
-    let vGridCapital = (0..nGridCapital)
-                           .map(|nCapital| 0.5 * capitalSteadyState + 0.00001 * (nCapital as f64))
-                           .collect::<Vec<f64>>();
+    let mut vGridCapital = [0f64; nGridCapital];
+
+    for (i, val) in vGridCapital.iter_mut().enumerate() {
+        *val = 0.5 * capitalSteadyState + 0.00001 * (i as f64)
+    }
 
     // 3. Required matrices and vectors
     let mut mValueFunction = vec![[0f64; nGridProductivity]; nGridCapital];
