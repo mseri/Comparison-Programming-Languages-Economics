@@ -72,19 +72,14 @@ fn solve(print: bool) -> f64 {
     let mut iteration = 0;
 
     while maxDifference > tolerance {
-        for nProductivity in 0..nGridProductivity {
-            let transitions = &mTransition[nProductivity];
-
-            for nCapital in 0..nGridCapital {
-                let value_fns = &mValueFunction[nCapital];
-
-                let expected_value = transitions.iter()
-                                                .zip(value_fns.iter())
-                                                .fold(0.0f64, |acc, (transition, value_fn)| {
+        for (expected_values, value_fns) in expectedValueFunction.iter_mut()
+                                                                 .zip(mValueFunction.iter()) {
+            for (expected_value, transitions) in expected_values.iter_mut().zip(mTransition.iter()) {
+                *expected_value = transitions.iter()
+                                             .zip(value_fns.iter())
+                                             .fold(0.0f64, |acc, (transition, value_fn)| {
                     acc + (transition * value_fn)
                 });
-
-                expectedValueFunction[nCapital][nProductivity] = expected_value;
             }
         }
 
