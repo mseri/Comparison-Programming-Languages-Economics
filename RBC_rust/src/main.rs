@@ -40,30 +40,30 @@ fn main() {
     Output = {}, Capital = {}, Consumption = {}", 
     outputSteadyState, capitalSteadyState, consumptionSteadyState);
 
-  let mut vGridCapital: [f64; nGridCapital] = [0_f64; nGridCapital];
-
-  for nCapital in 0..nGridCapital {
-      vGridCapital[nCapital] = 0.5*capitalSteadyState + 0.00001*(nCapital as f64)
-  }
+  let vGridCapital = (0..nGridCapital).map(|nCapital| 
+    0.5*capitalSteadyState + 0.00001*(nCapital as f64)
+  ).collect::<Vec<f64>>();
 
   // 3. Required matrices and vectors
+  // One could use: vec![vec![0_f64; nGridProductivity]; nGridCapital];
+  // but for some reasons this is faster.
+  
+  #[inline]
   fn row() -> Vec<f64> {
     (0..nGridProductivity).map(|_| 0_f64).collect::<Vec<f64>>()
   } 
 
-  let mut mOutput = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
   let mut mValueFunction = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
   let mut mValueFunctionNew = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
   let mut mPolicyFunction = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
   let mut expectedValueFunction = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
   
   // 4. We pre-build output for each point in the grid
-    
-  for nProductivity in 0..nGridProductivity {
-    for nCapital in 0..nGridCapital {
-        mOutput[nCapital][nProductivity] = vProductivity[nProductivity]*vGridCapital[nCapital].powf(aalpha);
-    }
-  }
+  let mOutput = (0..nGridCapital).map(|nCapital| {
+    (0..nGridProductivity).map(|nProductivity| 
+        vProductivity[nProductivity]*vGridCapital[nCapital].powf(aalpha)
+      ).collect::<Vec<f64>>()
+  }).collect::<Vec<Vec<f64>>>();
 
   // 5. Main iteration
   // TODO: one could implement a macro for the multiple declarations
@@ -128,7 +128,7 @@ fn main() {
             if diff>diffHighSoFar {
                 diffHighSoFar = diff;
             }
-            mValueFunction[nCapital][nProductivity] = mValueFunctionNew [nCapital][nProductivity];
+            mValueFunction[nCapital][nProductivity] = mValueFunctionNew[nCapital][nProductivity];
         }
     }
     maxDifference = diffHighSoFar;
