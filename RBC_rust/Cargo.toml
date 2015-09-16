@@ -8,3 +8,7 @@ time = "0.1"
 
 [[bin]]
 name = "testrust"
+
+[[bin]]
+name = "restrustunsafe"
+path = "src/main1.rs"
