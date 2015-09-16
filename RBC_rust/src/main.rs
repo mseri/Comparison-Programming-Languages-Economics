@@ -70,13 +70,18 @@ fn solve(print: bool) -> f64 {
 
     while maxDifference > tolerance {
         for nProductivity in 0..nGridProductivity {
+            let transitions = &mTransition[nProductivity];
+
             for nCapital in 0..nGridCapital {
-                expectedValueFunction[nCapital][nProductivity] = 0.0;
-                for nProductivityNextPeriod in 0..nGridProductivity {
-                    expectedValueFunction[nCapital][nProductivity] +=
-                        mTransition[nProductivity][nProductivityNextPeriod] *
-                        mValueFunction[nCapital][nProductivityNextPeriod];
-                }
+                let value_fns = &mValueFunction[nCapital];
+
+                let expected_value = transitions.iter()
+                                                .zip(value_fns.iter())
+                                                .fold(0.0f64, |acc, (transition, value_fn)| {
+                    acc + (transition * value_fn)
+                });
+
+                expectedValueFunction[nCapital][nProductivity] = expected_value;
             }
         }
 
