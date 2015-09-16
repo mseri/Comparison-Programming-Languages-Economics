@@ -120,22 +120,20 @@ fn solve(print: bool) -> f64 {
 
         }
 
-        let mut diffHighSoFar = -100000.0;
-        for nProductivity in 0..nGridProductivity {
-            for nCapital in 0..nGridCapital {
-                let diff = (mValueFunction[nCapital][nProductivity] -
-                        mValueFunctionNew[nCapital][nProductivity])
-                           .abs();
-                if diff > diffHighSoFar {
-                    diffHighSoFar = diff;
+        {
+            let old_vals = mValueFunction.iter().flat_map(|arr| arr.iter());
+            let new_vals = mValueFunctionNew.iter().flat_map(|arr| arr.iter());
+
+            maxDifference = -100000.0;
+            for diff in old_vals.zip(new_vals).map(|(old, new)| (old - new).abs()) {
+                if diff > maxDifference {
+                    maxDifference = diff
                 }
             }
         }
 
         // swap buffers after the loop
         mem::swap(&mut mValueFunction, &mut mValueFunctionNew);
-
-        maxDifference = diffHighSoFar;
 
         iteration += 1;
         if print && (iteration % 10 == 0 || iteration == 1) {
