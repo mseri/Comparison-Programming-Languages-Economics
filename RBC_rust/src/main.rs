@@ -68,7 +68,6 @@ fn solve(print: bool) -> f64 {
   // TODO: one could implement a macro for the multiple declarations
     let mut maxDifference = 10_f64;
     const tolerance: f64 = 0.0000001; // compiler warn: variable does not need to be mutable
-    let mut capitalChoice: f64;
 
     let mut iteration = 0;
 
@@ -90,18 +89,16 @@ fn solve(print: bool) -> f64 {
         }
 
         for nProductivity in 0..nGridProductivity {
-
-        // We start from previous choice (monotonicity of policy function)
+            // We start from previous choice (monotonicity of policy function)
             let mut gridCapitalNextPeriod = 0;
 
             for nCapital in 0..nGridCapital {
-
                 let mut valueHighSoFar = -100000.0;
+                let mut capitalChoice = vGridCapital[0];
+                let mOutput_cache = mOutput[nCapital][nProductivity];
 
                 for nCapitalNextPeriod in gridCapitalNextPeriod..nGridCapital {
-
-                    let consumption = mOutput[nCapital][nProductivity] -
-                                  vGridCapital[nCapitalNextPeriod];
+                    let consumption = mOutput_cache - vGridCapital[nCapitalNextPeriod];
                     let valueProvisional = (1_f64 - bbeta) * (consumption.ln()) +
                                        bbeta *
                                        expectedValueFunction[nCapitalNextPeriod][nProductivity];
@@ -113,13 +110,11 @@ fn solve(print: bool) -> f64 {
                     } else {
                         break; // We break when we have achieved the max
                     }
-
-                    mValueFunctionNew[nCapital][nProductivity] = valueHighSoFar;
-                    mPolicyFunction[nCapital][nProductivity] = capitalChoice;
                 }
 
+                mValueFunctionNew[nCapital][nProductivity] = valueHighSoFar;
+                mPolicyFunction[nCapital][nProductivity] = capitalChoice;
             }
-
         }
 
         {
