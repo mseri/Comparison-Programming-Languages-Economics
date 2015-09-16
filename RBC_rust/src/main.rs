@@ -44,21 +44,13 @@ fn main() {
                            .map(|nCapital| 0.5 * capitalSteadyState + 0.00001 * (nCapital as f64))
                            .collect::<Vec<f64>>();
 
-  // 3. Required matrices and vectors
-  // One could use: vec![vec![0_f64; nGridProductivity]; nGridCapital];
-  // but for some reasons this is faster.
+    // 3. Required matrices and vectors
+    let mut mValueFunction = vec![vec![0f64; nGridProductivity]; nGridCapital];
+    let mut mValueFunctionNew = mValueFunction.clone();
+    let mut mPolicyFunction = mValueFunction.clone();
+    let mut expectedValueFunction = mValueFunction.clone();
 
-    #[inline]
-    fn row() -> Vec<f64> {
-        (0..nGridProductivity).map(|_| 0_f64).collect::<Vec<f64>>()
-    }
-
-    let mut mValueFunction = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
-    let mut mValueFunctionNew = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
-    let mut mPolicyFunction = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
-    let mut expectedValueFunction = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
-
-  // 4. We pre-build output for each point in the grid
+    // 4. We pre-build output for each point in the grid
     let mOutput = (0..nGridCapital)
                       .map(|nCapital| {
                           (0..nGridProductivity).map(|nProductivity|
@@ -76,7 +68,6 @@ fn main() {
     let mut iteration = 0;
 
     while maxDifference > tolerance {
-
         for nProductivity in 0..nGridProductivity {
             for nCapital in 0..nGridCapital {
                 expectedValueFunction[nCapital][nProductivity] = 0.0;
