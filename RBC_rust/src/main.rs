@@ -95,10 +95,10 @@ fn solve(print: bool) -> f64 {
             for nCapital in 0..nGridCapital {
                 let mut valueHighSoFar = -100000.0;
                 let mut capitalChoice = vGridCapital[0];
-                let mOutput_cache = mOutput[nCapital][nProductivity];
+                let mOutput_cache = &mOutput[nCapital][nProductivity];
 
                 for nCapitalNextPeriod in gridCapitalNextPeriod..nGridCapital {
-                    let consumption = mOutput_cache - vGridCapital[nCapitalNextPeriod];
+                    let consumption = mOutput_cache - &vGridCapital[nCapitalNextPeriod];
                     let valueProvisional = (1_f64 - bbeta) * (consumption.ln()) +
                                        bbeta *
                                        expectedValueFunction[nCapitalNextPeriod][nProductivity];
