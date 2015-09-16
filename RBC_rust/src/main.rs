@@ -54,13 +54,15 @@ fn solve(print: bool) -> f64 {
     let mut expectedValueFunction = mValueFunction.clone();
 
     // 4. We pre-build output for each point in the grid
-    let mOutput = (0..nGridCapital)
-                      .map(|nCapital| {
-                          (0..nGridProductivity).map(|nProductivity|
-        vProductivity[nProductivity]*vGridCapital[nCapital].powf(aalpha)
-      ).collect::<Vec<f64>>()
-                      })
-                      .collect::<Vec<Vec<f64>>>();
+    let mOutput : Vec<[f64; nGridProductivity]> = (0..nGridCapital).map(|nCapital| {
+        let mut arr = [0.0; nGridProductivity];
+
+        for (nProductivity, slot) in arr.iter_mut().enumerate() {
+            *slot = vProductivity[nProductivity] * vGridCapital[nCapital].powf(aalpha)
+        }
+
+        arr
+    }).collect();
 
   // 5. Main iteration
   // TODO: one could implement a macro for the multiple declarations
