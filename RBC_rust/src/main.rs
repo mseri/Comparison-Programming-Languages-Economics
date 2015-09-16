@@ -1,6 +1,8 @@
 #![allow(non_snake_case, non_upper_case_globals)]
 extern crate time;
+
 use time::precise_time_s;
+use std::mem;
 
 ///////////////////////////////////////////////////////////////////////////////
 // 1. Calibration
@@ -69,7 +71,6 @@ fn main() {
   // TODO: one could implement a macro for the multiple declarations
     let mut maxDifference = 10_f64;
     let mut diff: f64;
-    let mut diffHighSoFar: f64;
     let tolerance = 0.0000001_f64; // compiler warn: variable does not need to be mutable
     let mut valueHighSoFar: f64;
     let mut valueProvisional: f64;
@@ -125,7 +126,7 @@ fn main() {
 
         }
 
-        diffHighSoFar = -100000.0;
+        let mut diffHighSoFar = -100000.0;
         for nProductivity in 0..nGridProductivity {
             for nCapital in 0..nGridCapital {
                 diff = (mValueFunction[nCapital][nProductivity] -
@@ -134,10 +135,12 @@ fn main() {
                 if diff > diffHighSoFar {
                     diffHighSoFar = diff;
                 }
-                mValueFunction[nCapital][nProductivity] =
-                    mValueFunctionNew[nCapital][nProductivity];
             }
         }
+
+        // swap buffers after the loop
+        mem::swap(&mut mValueFunction, &mut mValueFunctionNew);
+
         maxDifference = diffHighSoFar;
 
         iteration += 1;
