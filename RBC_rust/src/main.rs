@@ -1,3 +1,4 @@
+#![allow(unused_unsafe)]
 extern crate time;
 extern crate num_cpus;
 extern crate scoped_threadpool;
@@ -84,6 +85,7 @@ fn solve(pool: &mut Pool, print: bool) -> f64 {
                 // Only capture refs
                 let values = &values;
 
+                unsafe { // scoped_api requires compiler 1.4 to be compiler-proven safe
                 scoped.execute(move || {
                     for (idx, expected_value) in expected_values.iter_mut().enumerate() {
                         *expected_value = transitions.iter()
@@ -93,6 +95,7 @@ fn solve(pool: &mut Pool, print: bool) -> f64 {
                         });
                     }
                 });
+                }
             }
         });
 
@@ -102,6 +105,7 @@ fn solve(pool: &mut Pool, print: bool) -> f64 {
                                                                                            .zip(diffs.iter_mut())
                                                                                            .zip(expected_values.iter())
                                                                                            .zip(outputs.iter()) {
+                unsafe { // scoped_api requires compiler 1.4 to be compiler-proven safe
                 scoped.execute(move || {
                     *max_diff = -100000.0;
 
@@ -138,6 +142,7 @@ fn solve(pool: &mut Pool, print: bool) -> f64 {
                         *policy = capital_choice;
                     }
                 })
+                }
             }
         });
 
