@@ -5,8 +5,8 @@ use time::precise_time_s;
 ///////////////////////////////////////////////////////////////////////////////
 // 1. Calibration
 ///////////////////////////////////////////////////////////////////////////////
-const aalpha:f64 = 0.33333333333;  // Elasticity of output w.r.t. capital
-const bbeta:f64 = 0.95;           // Discount factor
+static aalpha:f64 = 1_f64/3_f64;  // Elasticity of output w.r.t. capital
+static bbeta:f64 = 0.95;           // Discount factor
 
 // Productivity values
 const vProductivity:[f64; 5] = [0.9792, 0.9896, 1.0000, 1.0106, 1.0212];
@@ -69,7 +69,6 @@ fn main() {
   // TODO: one could implement a macro for the multiple declarations
   let mut maxDifference = 10_f64;
   let mut diff: f64;
-  let mut diffHighSoFar: f64;
   let tolerance = 0.0000001_f64; // compiler warn: variable does not need to be mutable
   let mut valueHighSoFar: f64; 
   let mut valueProvisional: f64;
@@ -121,17 +120,15 @@ fn main() {
         
     }
     
-    diffHighSoFar = -100000.0;
+    diff = -100000.0;
     for nProductivity in 0..nGridProductivity {
         for nCapital in 0..nGridCapital {
-            diff = (mValueFunction[nCapital][nProductivity]-mValueFunctionNew[nCapital][nProductivity]).abs();
-            if diff>diffHighSoFar {
-                diffHighSoFar = diff;
-            }
-            mValueFunction[nCapital][nProductivity] = mValueFunctionNew[nCapital][nProductivity];
+          let newVal = mValueFunctionNew[nCapital][nProductivity];
+          diff = diff.max((mValueFunction[nCapital][nProductivity]-newVal).abs());
+          mValueFunction[nCapital][nProductivity] = newVal;
         }
     }
-    maxDifference = diffHighSoFar;
+    maxDifference = diff;
     
     iteration += 1;
     if iteration % 10 == 0 || iteration == 1 {
