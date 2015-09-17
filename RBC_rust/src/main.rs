@@ -1,4 +1,4 @@
-#![allow(non_snake_case, non_upper_case_globals)]
+#![allow(non_snake_case)]
 // #![cfg_attr(test, feature(test))]
 extern crate time;
 extern crate num_cpus;
@@ -11,22 +11,22 @@ use std::mem;
 ///////////////////////////////////////////////////////////////////////////////
 // 1. Calibration
 ///////////////////////////////////////////////////////////////////////////////
-const aalpha:f64 = 0.33333333333;  // Elasticity of output w.r.t. capital
-const bbeta:f64 = 0.95;           // Discount factor
+const ALPHA: f64 = 0.33333333333;  // Elasticity of output w.r.t. capital
+const BETA: f64 = 0.95;           // Discount factor
 
 // Productivity values
-const vProductivity:[f64; 5] = [0.9792, 0.9896, 1.0000, 1.0106, 1.0212];
+const PRODUCTIVITY: [f64; 5] = [0.9792, 0.9896, 1.0000, 1.0106, 1.0212];
 
 // Transition matrix
-static mTransition:[[f64; 5]; 5] = [[0.9727, 0.0273, 0.0000, 0.0000, 0.0000],
-                                    [0.0041, 0.9806, 0.0153, 0.0000, 0.0000],
-                                    [0.0000, 0.0082, 0.9837, 0.0082, 0.0000],
-                                    [0.0000, 0.0000, 0.0153, 0.9806, 0.0041],
-                                    [0.0000, 0.0000, 0.0000, 0.0273, 0.9727]];
+static TRANSITIONS: [[f64; 5]; 5] = [[0.9727, 0.0273, 0.0000, 0.0000, 0.0000],
+                                     [0.0041, 0.9806, 0.0153, 0.0000, 0.0000],
+                                     [0.0000, 0.0082, 0.9837, 0.0082, 0.0000],
+                                     [0.0000, 0.0000, 0.0153, 0.9806, 0.0041],
+                                     [0.0000, 0.0000, 0.0000, 0.0273, 0.9727]];
 
 // Dimensions to generate the grid of capital
-const nGridCapital: usize = 17820;
-const nGridProductivity: usize = 5;
+const GRID_CAPITAL: usize = 17820;
+const GRID_PRODUCTIVITY: usize = 5;
 
 fn solve(print: bool) -> f64 {
   /////////////////////////////////////////////////////////////////////////////
@@ -36,8 +36,8 @@ fn solve(print: bool) -> f64 {
     let thread_count = num_cpus::get();
     let mut pool = Pool::new(thread_count as u32);
 
-    let capitalSteadyState: f64 = (aalpha * bbeta).powf(1_f64 / (1_f64 - aalpha));
-    let outputSteadyState: f64 = capitalSteadyState.powf(aalpha);
+    let capitalSteadyState: f64 = (ALPHA * BETA).powf(1_f64 / (1_f64 - ALPHA));
+    let outputSteadyState: f64 = capitalSteadyState.powf(ALPHA);
     let consumptionSteadyState: f64 = outputSteadyState - capitalSteadyState;
 
     if print {
@@ -47,43 +47,43 @@ fn solve(print: bool) -> f64 {
                  consumptionSteadyState);
     }
 
-    let mut vGridCapital = [0f64; nGridCapital];
+    let mut vGridCapital = [0f64; GRID_CAPITAL];
 
     for (i, val) in vGridCapital.iter_mut().enumerate() {
         *val = 0.5 * capitalSteadyState + 0.00001 * (i as f64)
     }
 
     // 3. Required matrices and vectors
-    let mut mValueFunction: [Vec<f64>; nGridProductivity] = [
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
+    let mut mValueFunction: [Vec<f64>; GRID_PRODUCTIVITY] = [
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
     ];
 
-    let mut mPolicyFunction: [Vec<f64>; nGridProductivity] = [
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
+    let mut mPolicyFunction: [Vec<f64>; GRID_PRODUCTIVITY] = [
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
     ];
 
-    let mut expectedValueFunction: [Vec<f64>; nGridProductivity] = [
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
-        vec![0f64; nGridCapital],
+    let mut expectedValueFunction: [Vec<f64>; GRID_PRODUCTIVITY] = [
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
+        vec![0f64; GRID_CAPITAL],
     ];
 
     // 4. We pre-build output for each point in the grid
-    let mOutput : Vec<[f64; nGridProductivity]> = (0..nGridCapital).map(|nCapital| {
-        let mut arr = [0.0; nGridProductivity];
+    let mOutput : Vec<[f64; GRID_PRODUCTIVITY]> = (0..GRID_CAPITAL).map(|nCapital| {
+        let mut arr = [0.0; GRID_PRODUCTIVITY];
 
         for (nProductivity, slot) in arr.iter_mut().enumerate() {
-            *slot = vProductivity[nProductivity] * vGridCapital[nCapital].powf(aalpha)
+            *slot = PRODUCTIVITY[nProductivity] * vGridCapital[nCapital].powf(ALPHA)
         }
 
         arr
@@ -92,17 +92,17 @@ fn solve(print: bool) -> f64 {
   // 5. Main iteration
   // TODO: one could implement a macro for the multiple declarations
     let mut maxDifference = 10_f64;
-    const tolerance: f64 = 0.0000001; // compiler warn: variable does not need to be mutable
+    const TOLERANCE: f64 = 0.0000001; // compiler warn: variable does not need to be mutable
 
     let mut iteration = 0;
 
     // small array to split where the writes are going, so we don't need a mutex
-    let mut differences = [-100000.0; nGridProductivity];
+    let mut differences = [-100000.0; GRID_PRODUCTIVITY];
 
-    while maxDifference > tolerance {
+    while maxDifference > TOLERANCE {
         pool.scoped(|scoped| {
             for (expected_values, transitions) in expectedValueFunction.iter_mut()
-                                                                       .zip(mTransition.iter()) {
+                                                                       .zip(TRANSITIONS.iter()) {
                 // Only capture refs
                 let mValueFunction = &mValueFunction;
 
@@ -140,10 +140,10 @@ fn solve(print: bool) -> f64 {
                         let mut capitalChoice = vGridCapital[0];
                         let mOutput_cache = &output[nProductivity];
 
-                        for nCapitalNextPeriod in gridCapitalNextPeriod..nGridCapital {
+                        for nCapitalNextPeriod in gridCapitalNextPeriod..GRID_CAPITAL {
                             let consumption = mOutput_cache - &vGridCapital[nCapitalNextPeriod];
-                            let valueProvisional = (1_f64 - bbeta) * (consumption.ln()) +
-                                                    bbeta *
+                            let valueProvisional = (1_f64 - BETA) * (consumption.ln()) +
+                                                    BETA *
                                                     expected_values[nCapitalNextPeriod];
 
                             if valueProvisional > valueHighSoFar {
