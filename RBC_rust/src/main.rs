@@ -96,10 +96,10 @@ fn solve(print: bool) -> f64 {
 
     let mut iteration = 0;
 
-    while maxDifference > tolerance {
-        // small array to split where the writes are going, so we don't need a mutex
-        let mut differences = [-100000.0; nGridProductivity];
+    // small array to split where the writes are going, so we don't need a mutex
+    let mut differences = [-100000.0; nGridProductivity];
 
+    while maxDifference > tolerance {
         pool.scoped(|scoped| {
             for (expected_values, transitions) in expectedValueFunction.iter_mut()
                                                                        .zip(mTransition.iter()) {
@@ -124,6 +124,8 @@ fn solve(print: bool) -> f64 {
                                                                          .zip(differences.iter_mut())
                                                                          .zip(expectedValueFunction.iter())
                                                                          .enumerate() {
+                *maxDifference = -100000.0;
+
                 // Only capture refs
                 let mOutput = &mOutput;
 
