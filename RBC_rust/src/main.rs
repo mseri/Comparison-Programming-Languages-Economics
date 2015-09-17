@@ -49,7 +49,6 @@ fn solve(print: bool) -> f64 {
 
     // 3. Required matrices and vectors
     let mut mValueFunction = vec![[0f64; nGridProductivity]; nGridCapital];
-    let mut mValueFunctionNew = mValueFunction.clone();
     let mut mPolicyFunction = mValueFunction.clone();
     let mut expectedValueFunction = mValueFunction.clone();
 
@@ -83,6 +82,7 @@ fn solve(print: bool) -> f64 {
             }
         }
 
+        maxDifference = -100000.0;
         for nProductivity in 0..nGridProductivity {
             // We start from previous choice (monotonicity of policy function)
             let mut gridCapitalNextPeriod = 0;
@@ -107,25 +107,15 @@ fn solve(print: bool) -> f64 {
                     }
                 }
 
-                mValueFunctionNew[nCapital][nProductivity] = valueHighSoFar;
-                mPolicyFunction[nCapital][nProductivity] = capitalChoice;
-            }
-        }
-
-        {
-            let old_vals = mValueFunction.iter().flat_map(|arr| arr.iter());
-            let new_vals = mValueFunctionNew.iter().flat_map(|arr| arr.iter());
-
-            maxDifference = -100000.0;
-            for diff in old_vals.zip(new_vals).map(|(old, new)| (old - new).abs()) {
+                let old = mem::replace(&mut mValueFunction[nCapital][nProductivity], valueHighSoFar);
+                let diff = (old - valueHighSoFar).abs();
                 if diff > maxDifference {
                     maxDifference = diff
                 }
+
+                mPolicyFunction[nCapital][nProductivity] = capitalChoice;
             }
         }
-
-        // swap buffers after the loop
-        mem::swap(&mut mValueFunction, &mut mValueFunctionNew);
 
         iteration += 1;
         if print && (iteration % 10 == 0 || iteration == 1) {
