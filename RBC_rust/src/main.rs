@@ -188,7 +188,9 @@ fn solve(print: bool) -> f64 {
 }
 
 fn main() {
-    let sample = false;
+    use std::env::args;
+
+    let sample = args().any(|arg| arg == "--sample");
 
     if sample {
         let mut samples = (0..5).map(|i| {
