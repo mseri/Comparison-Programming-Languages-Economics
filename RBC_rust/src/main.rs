@@ -1,8 +1,11 @@
 #![allow(non_snake_case, non_upper_case_globals)]
 // #![cfg_attr(test, feature(test))]
 extern crate time;
+extern crate num_cpus;
+extern crate scoped_threadpool;
 
 use time::precise_time_s;
+use scoped_threadpool::Pool;
 use std::mem;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -29,6 +32,9 @@ fn solve(print: bool) -> f64 {
   /////////////////////////////////////////////////////////////////////////////
   // 2. Steady State
   /////////////////////////////////////////////////////////////////////////////
+
+    let thread_count = num_cpus::get();
+    let mut pool = Pool::new(thread_count as u32);
 
     let capitalSteadyState: f64 = (aalpha * bbeta).powf(1_f64 / (1_f64 - aalpha));
     let outputSteadyState: f64 = capitalSteadyState.powf(aalpha);
@@ -103,45 +109,62 @@ fn solve(print: bool) -> f64 {
             }
         }
 
-        maxDifference = -100000.0;
+        // small array to split where the writes are going, so we don't need a mutex
+        let mut differences = [-100000.0; nGridProductivity];
 
-        for (nProductivity, (policies, value_fns)) in mPolicyFunction.iter_mut()
-                                                                     .zip(mValueFunction.iter_mut())
-                                                                     .enumerate() {
-            let expected_fn = &expectedValueFunction[nProductivity];
+        pool.scoped(|scoped| {
+            for (nProductivity, ((policies, value_fns), maxDifference)) in mPolicyFunction.iter_mut()
+                                                                         .zip(mValueFunction.iter_mut())
+                                                                         .zip(differences.iter_mut())
+                                                                         .enumerate() {
+                // Only capture refs
+                let expectedValueFunction = &expectedValueFunction;
+                let mOutput = &mOutput;
 
-            // We start from previous choice (monotonicity of policy function)
-            let mut gridCapitalNextPeriod = 0;
+                scoped.execute(move || {
+                    let expected_fn = &expectedValueFunction[nProductivity];
 
-            for ((policy, output), value_fn) in policies.iter_mut()
-                                                        .zip(mOutput.iter())
-                                                        .zip(value_fns.iter_mut()) {
-                let mut valueHighSoFar = -100000.0;
-                let mut capitalChoice = vGridCapital[0];
-                let mOutput_cache = &output[nProductivity];
+                    // We start from previous choice (monotonicity of policy function)
+                    let mut gridCapitalNextPeriod = 0;
 
-                for nCapitalNextPeriod in gridCapitalNextPeriod..nGridCapital {
-                    let consumption = mOutput_cache - &vGridCapital[nCapitalNextPeriod];
-                    let valueProvisional = (1_f64 - bbeta) * (consumption.ln()) +
-                                            bbeta *
-                                            expected_fn[nCapitalNextPeriod];
+                    for ((policy, output), value_fn) in policies.iter_mut()
+                                                                .zip(mOutput.iter())
+                                                                .zip(value_fns.iter_mut()) {
+                        let mut valueHighSoFar = -100000.0;
+                        let mut capitalChoice = vGridCapital[0];
+                        let mOutput_cache = &output[nProductivity];
 
-                    if valueProvisional > valueHighSoFar {
-                        valueHighSoFar = valueProvisional;
-                        capitalChoice = vGridCapital[nCapitalNextPeriod];
-                        gridCapitalNextPeriod = nCapitalNextPeriod;
-                    } else {
-                        break; // We break when we have achieved the max
+                        for nCapitalNextPeriod in gridCapitalNextPeriod..nGridCapital {
+                            let consumption = mOutput_cache - &vGridCapital[nCapitalNextPeriod];
+                            let valueProvisional = (1_f64 - bbeta) * (consumption.ln()) +
+                                                    bbeta *
+                                                    expected_fn[nCapitalNextPeriod];
+
+                            if valueProvisional > valueHighSoFar {
+                                valueHighSoFar = valueProvisional;
+                                capitalChoice = vGridCapital[nCapitalNextPeriod];
+                                gridCapitalNextPeriod = nCapitalNextPeriod;
+                            } else {
+                                break; // We break when we have achieved the max
+                            }
+                        }
+
+                        let old = mem::replace(value_fn, valueHighSoFar);
+                        let diff = (old - valueHighSoFar).abs();
+                        if diff > *maxDifference {
+                            *maxDifference = diff
+                        }
+
+                        *policy = capitalChoice;
                     }
-                }
+                })
+            }
+        });
 
-                let old = mem::replace(value_fn, valueHighSoFar);
-                let diff = (old - valueHighSoFar).abs();
-                if diff > maxDifference {
-                    maxDifference = diff
-                }
-
-                *policy = capitalChoice;
+        maxDifference = -100000.0;
+        for &diff in &differences {
+            if diff > maxDifference {
+                maxDifference = diff
             }
         }
 
