@@ -83,14 +83,18 @@ fn solve(print: bool) -> f64 {
         }
 
         maxDifference = -100000.0;
+
         for nProductivity in 0..nGridProductivity {
             // We start from previous choice (monotonicity of policy function)
             let mut gridCapitalNextPeriod = 0;
 
-            for nCapital in 0..nGridCapital {
+            for (nCapital, ((policy, output), value_fn)) in mPolicyFunction.iter_mut()
+                                                               .zip(mOutput.iter())
+                                                               .zip(mValueFunction.iter_mut())
+                                                               .enumerate() {
                 let mut valueHighSoFar = -100000.0;
                 let mut capitalChoice = vGridCapital[0];
-                let mOutput_cache = &mOutput[nCapital][nProductivity];
+                let mOutput_cache = &output[nProductivity];
 
                 for nCapitalNextPeriod in gridCapitalNextPeriod..nGridCapital {
                     let consumption = mOutput_cache - &vGridCapital[nCapitalNextPeriod];
@@ -107,13 +111,13 @@ fn solve(print: bool) -> f64 {
                     }
                 }
 
-                let old = mem::replace(&mut mValueFunction[nCapital][nProductivity], valueHighSoFar);
+                let old = mem::replace(&mut value_fn[nProductivity], valueHighSoFar);
                 let diff = (old - valueHighSoFar).abs();
                 if diff > maxDifference {
                     maxDifference = diff
                 }
 
-                mPolicyFunction[nCapital][nProductivity] = capitalChoice;
+                policy[nProductivity] = capitalChoice;
             }
         }
 
