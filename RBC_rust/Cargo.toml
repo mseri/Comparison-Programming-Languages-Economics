@@ -1,14 +1,12 @@
 [package]
 name = "RBC_rust"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Marcello Seri <marcello.seri@gmail.com>"]
 
 [dependencies]
 time = "0.1"
+num_cpus = "0.2"
+scoped_threadpool = "0.1"
 
 [[bin]]
 name = "testrust"
-
-[[bin]]
-name = "testrustunsafe"
-path = "src/main1.rs"
