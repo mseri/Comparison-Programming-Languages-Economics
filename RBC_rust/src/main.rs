@@ -18,11 +18,11 @@ const bbeta:f64 = 0.95;           // Discount factor
 const vProductivity:[f64; 5] = [0.9792, 0.9896, 1.0000, 1.0106, 1.0212];
 
 // Transition matrix
-const mTransition:[[f64; 5]; 5] = [[0.9727, 0.0273, 0.0000, 0.0000, 0.0000],
-                                   [0.0041, 0.9806, 0.0153, 0.0000, 0.0000],
-                                   [0.0000, 0.0082, 0.9837, 0.0082, 0.0000],
-                                   [0.0000, 0.0000, 0.0153, 0.9806, 0.0041],
-                                   [0.0000, 0.0000, 0.0000, 0.0273, 0.9727]];
+static mTransition:[[f64; 5]; 5] = [[0.9727, 0.0273, 0.0000, 0.0000, 0.0000],
+                                    [0.0041, 0.9806, 0.0153, 0.0000, 0.0000],
+                                    [0.0000, 0.0082, 0.9837, 0.0082, 0.0000],
+                                    [0.0000, 0.0000, 0.0153, 0.9806, 0.0041],
+                                    [0.0000, 0.0000, 0.0000, 0.0273, 0.9727]];
 
 // Dimensions to generate the grid of capital
 const nGridCapital: usize = 17820;
@@ -97,33 +97,37 @@ fn solve(print: bool) -> f64 {
     let mut iteration = 0;
 
     while maxDifference > tolerance {
-        for (expected_values, transitions) in expectedValueFunction.iter_mut()
-                                                                                .zip(mTransition.iter()) {
-            for (idx, expected_value) in expected_values.iter_mut()
-                                                        .enumerate() {
-                *expected_value = transitions.iter()
-                                             .zip(mValueFunction.iter())
-                                             .fold(0.0f64, |acc, (transition, value_fns)| {
-                    acc + (transition * value_fns[idx])
-                });
-            }
-        }
-
         // small array to split where the writes are going, so we don't need a mutex
         let mut differences = [-100000.0; nGridProductivity];
 
         pool.scoped(|scoped| {
-            for (nProductivity, ((policies, value_fns), maxDifference)) in mPolicyFunction.iter_mut()
+            for (expected_values, transitions) in expectedValueFunction.iter_mut()
+                                                                       .zip(mTransition.iter()) {
+                // Only capture refs
+                let mValueFunction = &mValueFunction;
+
+                scoped.execute(move || {
+                    for (idx, expected_value) in expected_values.iter_mut().enumerate() {
+                        *expected_value = transitions.iter()
+                                                     .zip(mValueFunction.iter())
+                                                     .fold(0.0f64, |acc, (transition, value_fns)| {
+                            acc + (transition * value_fns[idx])
+                        });
+                    }
+                });
+            }
+        });
+
+        pool.scoped(|scoped| {
+            for (nProductivity, (((policies, value_fns), maxDifference), expected_values)) in mPolicyFunction.iter_mut()
                                                                          .zip(mValueFunction.iter_mut())
                                                                          .zip(differences.iter_mut())
+                                                                         .zip(expectedValueFunction.iter())
                                                                          .enumerate() {
                 // Only capture refs
-                let expectedValueFunction = &expectedValueFunction;
                 let mOutput = &mOutput;
 
                 scoped.execute(move || {
-                    let expected_fn = &expectedValueFunction[nProductivity];
-
                     // We start from previous choice (monotonicity of policy function)
                     let mut gridCapitalNextPeriod = 0;
 
@@ -138,7 +142,7 @@ fn solve(print: bool) -> f64 {
                             let consumption = mOutput_cache - &vGridCapital[nCapitalNextPeriod];
                             let valueProvisional = (1_f64 - bbeta) * (consumption.ln()) +
                                                     bbeta *
-                                                    expected_fn[nCapitalNextPeriod];
+                                                    expected_values[nCapitalNextPeriod];
 
                             if valueProvisional > valueHighSoFar {
                                 valueHighSoFar = valueProvisional;
