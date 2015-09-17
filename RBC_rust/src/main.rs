@@ -24,6 +24,19 @@ static TRANSITIONS: [[f64; 5]; 5] = [[0.9727, 0.0273, 0.0000, 0.0000, 0.0000],
 const GRID_CAPITAL: usize = 17820;
 const GRID_PRODUCTIVITY: usize = 5;
 
+macro_rules! init_array {
+    ($f:expr) => (
+        {
+            let arr: [Vec<f64>; GRID_PRODUCTIVITY] = [
+                $f(0), $f(1), $f(2), $f(3), $f(4),
+            ];
+
+            arr
+        }
+    );
+    () => ( init_array![|_| vec![0.0; GRID_CAPITAL]] );
+}
+
 fn solve(pool: &mut Pool, print: bool) -> f64 {
     // 2. Steady State
     let capital_steady_state = (ALPHA * BETA).powf(1_f64 / (1_f64 - ALPHA));
@@ -44,38 +57,16 @@ fn solve(pool: &mut Pool, print: bool) -> f64 {
     }
 
     // 3. Required matrices and vectors
-    let mut values: [Vec<f64>; GRID_PRODUCTIVITY] = [
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-    ];
-
-    let mut policies: [Vec<f64>; GRID_PRODUCTIVITY] = [
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-    ];
-
-    let mut expected_values: [Vec<f64>; GRID_PRODUCTIVITY] = [
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-        vec![0f64; GRID_CAPITAL],
-    ];
+    let mut values = init_array![];
+    let mut policies = init_array![];
+    let mut expected_values = init_array![];
 
     // 4. We pre-build output for each point in the grid
-    let outputs: [Vec<f64>; GRID_PRODUCTIVITY] = [
-        (0..GRID_CAPITAL).map(|capital_idx| PRODUCTIVITY[0] * grid_capital[capital_idx].powf(ALPHA)).collect(),
-        (0..GRID_CAPITAL).map(|capital_idx| PRODUCTIVITY[1] * grid_capital[capital_idx].powf(ALPHA)).collect(),
-        (0..GRID_CAPITAL).map(|capital_idx| PRODUCTIVITY[2] * grid_capital[capital_idx].powf(ALPHA)).collect(),
-        (0..GRID_CAPITAL).map(|capital_idx| PRODUCTIVITY[3] * grid_capital[capital_idx].powf(ALPHA)).collect(),
-        (0..GRID_CAPITAL).map(|capital_idx| PRODUCTIVITY[4] * grid_capital[capital_idx].powf(ALPHA)).collect(),
-    ];
+    let outputs = init_array![|i| {
+        (0..GRID_CAPITAL).map(|capital_idx|
+            PRODUCTIVITY[i] * grid_capital[capital_idx].powf(ALPHA)
+        ).collect()
+    }];
 
     // 5. Main iteration
     const TOLERANCE: f64 = 0.0000001; // compiler warn: variable does not need to be mutable
