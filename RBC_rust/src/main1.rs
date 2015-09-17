@@ -45,27 +45,24 @@ fn main() {
   ).collect::<Vec<f64>>();
 
   // 3. Required matrices and vectors
-  // One could use: vec![vec![0_f64; nGridProductivity]; nGridCapital];
-  // but for some reasons this is faster.
 
-  #[inline]
-  fn row() -> Vec<f64> {
-    (0..nGridProductivity).map(|_| 0_f64).collect::<Vec<f64>>()
-  } 
+  let mut mValueFunction = Box::new([[0f64; nGridProductivity]; nGridCapital]);
+  let mut mValueFunctionNew = Box::new([[0f64; nGridProductivity]; nGridCapital]);
+  let mut mPolicyFunction = Box::new([[0f64; nGridProductivity]; nGridCapital]);
+  let mut expectedValueFunction = Box::new([[0f64; nGridProductivity]; nGridCapital]);
 
-  let mut mValueFunction = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
-  let mut mValueFunctionNew = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
-  let mut mPolicyFunction = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
-  let mut expectedValueFunction = (0..nGridCapital).map(|_| row()).collect::<Vec<Vec<f64>>>();
-  
   // 4. We pre-build output for each point in the grid
-  let mOutput = (0..nGridCapital).map(|nCapital| {
-    (0..nGridProductivity).map(|nProductivity| 
-        unsafe {
-          vProductivity.get_unchecked(nProductivity)*vGridCapital.get_unchecked(nCapital).powf(aalpha)
-        }
-      ).collect::<Vec<f64>>()
-  }).collect::<Vec<Vec<f64>>>();
+
+  let mut mOutput = Box::new([[0f64; nGridProductivity]; nGridCapital]);
+  for nProductivity in 0..nGridProductivity {
+    for nCapital in 0..nGridCapital {
+      unsafe {
+        mOutput[nCapital][nProductivity] =
+        vProductivity.get_unchecked(nProductivity)*vGridCapital.get_unchecked(nCapital).powf(aalpha);
+      }
+    }
+  }
+  let mOutput = mOutput;
 
   // 5. Main iteration
   // TODO: one could implement a macro for the multiple declarations
