@@ -48,9 +48,29 @@ fn solve(print: bool) -> f64 {
     }
 
     // 3. Required matrices and vectors
-    let mut mValueFunction = vec![[0f64; nGridProductivity]; nGridCapital];
-    let mut mPolicyFunction = mValueFunction.clone();
-    let mut expectedValueFunction = mValueFunction.clone();
+    let mut mValueFunction: [Vec<f64>; nGridProductivity] = [
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+    ];
+
+    let mut mPolicyFunction: [Vec<f64>; nGridProductivity] = [
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+    ];
+
+    let mut expectedValueFunction: [Vec<f64>; nGridProductivity] = [
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+        vec![0f64; nGridCapital],
+    ];
 
     // 4. We pre-build output for each point in the grid
     let mOutput : Vec<[f64; nGridProductivity]> = (0..nGridCapital).map(|nCapital| {
@@ -71,27 +91,31 @@ fn solve(print: bool) -> f64 {
     let mut iteration = 0;
 
     while maxDifference > tolerance {
-        for (expected_values, value_fns) in expectedValueFunction.iter_mut()
-                                                                 .zip(mValueFunction.iter()) {
-            for (expected_value, transitions) in expected_values.iter_mut().zip(mTransition.iter()) {
+        for (expected_values, transitions) in expectedValueFunction.iter_mut()
+                                                                                .zip(mTransition.iter()) {
+            for (idx, expected_value) in expected_values.iter_mut()
+                                                        .enumerate() {
                 *expected_value = transitions.iter()
-                                             .zip(value_fns.iter())
-                                             .fold(0.0f64, |acc, (transition, value_fn)| {
-                    acc + (transition * value_fn)
+                                             .zip(mValueFunction.iter())
+                                             .fold(0.0f64, |acc, (transition, value_fns)| {
+                    acc + (transition * value_fns[idx])
                 });
             }
         }
 
         maxDifference = -100000.0;
 
-        for nProductivity in 0..nGridProductivity {
+        for (nProductivity, (policies, value_fns)) in mPolicyFunction.iter_mut()
+                                                                     .zip(mValueFunction.iter_mut())
+                                                                     .enumerate() {
+            let expected_fn = &expectedValueFunction[nProductivity];
+
             // We start from previous choice (monotonicity of policy function)
             let mut gridCapitalNextPeriod = 0;
 
-            for (nCapital, ((policy, output), value_fn)) in mPolicyFunction.iter_mut()
-                                                               .zip(mOutput.iter())
-                                                               .zip(mValueFunction.iter_mut())
-                                                               .enumerate() {
+            for ((policy, output), value_fn) in policies.iter_mut()
+                                                        .zip(mOutput.iter())
+                                                        .zip(value_fns.iter_mut()) {
                 let mut valueHighSoFar = -100000.0;
                 let mut capitalChoice = vGridCapital[0];
                 let mOutput_cache = &output[nProductivity];
@@ -99,8 +123,8 @@ fn solve(print: bool) -> f64 {
                 for nCapitalNextPeriod in gridCapitalNextPeriod..nGridCapital {
                     let consumption = mOutput_cache - &vGridCapital[nCapitalNextPeriod];
                     let valueProvisional = (1_f64 - bbeta) * (consumption.ln()) +
-                                       bbeta *
-                                       expectedValueFunction[nCapitalNextPeriod][nProductivity];
+                                            bbeta *
+                                            expected_fn[nCapitalNextPeriod];
 
                     if valueProvisional > valueHighSoFar {
                         valueHighSoFar = valueProvisional;
@@ -111,13 +135,13 @@ fn solve(print: bool) -> f64 {
                     }
                 }
 
-                let old = mem::replace(&mut value_fn[nProductivity], valueHighSoFar);
+                let old = mem::replace(value_fn, valueHighSoFar);
                 let diff = (old - valueHighSoFar).abs();
                 if diff > maxDifference {
                     maxDifference = diff
                 }
 
-                policy[nProductivity] = capitalChoice;
+                *policy = capitalChoice;
             }
         }
 
@@ -131,7 +155,7 @@ fn solve(print: bool) -> f64 {
         println!("Iteration = {}, Sup Diff = {}", iteration, maxDifference);
     }
 
-    mPolicyFunction[999][2]
+    mPolicyFunction[2][999]
 }
 
 fn main() {
